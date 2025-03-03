@@ -1,20 +1,20 @@
 ---
-layout: archive
+layout: single
+author_profile: true
 ---
 
-{{ content }}
+<h2>About Me</h2>
 
-<h3 class="archive__subtitle">{{ site.data.ui-text[site.locale].recent_posts | default: "Recent Posts" }}</h3>
+<p style="font-size: 0.75em;">
+  Hello! I'm Zhaohong Liu, a researcher/developer in Robotics.
+  M.Sc. student in Mechanical Engineering at SJTU with expertise in quadrotor motion planning, reinforcement learning, and UAV autonomy. Experienced in full-stack development for aerial robotics systems, including perception, planning, control and hardware integration. Aspiring to pursue a Ph.D. focusing on AI-driven autonomous (aerial) robots in interactive tasks, particularly in learning-based interactive planning, manipulation and real-world deployment.
+</p>
 
-{% if paginator %}
-  {% assign posts = paginator.posts %}
-{% else %}
-  {% assign posts = site.posts %}
-{% endif %}
+<h2>Research Interests</h2>
 
-{% assign entries_layout = page.entries_layout | default: 'list' %}
-<div class="entries-{{ entries_layout }}">
-  {% include documents-collection.html entries=posts type=entries_layout %}
-</div>
-
-{% include paginator.html %}
+<ul style="font-size: 0.75em;">
+  <li>Aerial robotics</li>
+  <li>Motion planning</li>
+  <li>Manipulation</li>
+  <li>Reinforcement learning</li>
+</ul>
