@@ -10,3 +10,15 @@ main:
   #   url: /collection-archive/
   # - title: "Sitemap"
   #   url: /sitemap/
+  - title: "Home"
+    url: /
+  - title: "Research"
+    url: /research/
+  - title: "Publications"
+    url: /publications/
+  - title: "Projects"
+    url: /projects/
+  - title: "Tech Blog"
+    url: /tech_blog/
+  - title: "Casual Blog"
+    url: /casual_blog/

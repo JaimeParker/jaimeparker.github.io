@@ -115,7 +115,7 @@ analytics:
 author:
   name             : "刘昭宏 (Zhaohong Liu)"
   avatar           : "/assets/images/bio-photo.jpg"
-  bio              : "Robotics researcher, M.Sc. Mech (SJTU), B.E. Aircraft Control (NWPU). Interested in robotics, motion planning, manipulation, and reinforcement learning."
+  bio              : "Robotics researcher, M.Sc. Mech (SJTU), B.E. Aircraft Control (NWPU)."
   location         : "Shanghai, China"
   email            : "jaimefriedhelmzhao@gmail.com"
   links:
@@ -217,6 +217,7 @@ kramdown:
   toc_levels: 1..6
   smart_quotes: lsquo,rsquo,ldquo,rdquo
   enable_coderay: false
+  math_engine: mathjax
 
 
 # Sass/SCSS
@@ -323,3 +324,10 @@ defaults:
       comments: # true
       share: true
       related: true
+  # _pages
+  - scope:
+      path: "_pages"
+      type: pages
+    values:
+      layout: single
+      author_profile: true

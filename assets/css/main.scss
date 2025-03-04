@@ -7,3 +7,78 @@ search: false
 
 @import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
 @import "minimal-mistakes"; // main partials
+
+/* 调整整体文章内容的字体大小 */
+.page__content {
+    font-size: 0.9em;
+    
+    h2 {
+      font-size: 1.4em;
+      margin-top: 1.5em;
+    }
+    
+    h3 {
+      font-size: 1.2em;
+      margin-top: 1.2em;
+    }
+    
+    p, li, ul, ol {
+      font-size: 0.95em;
+      line-height: 1.6;
+    }
+    
+    /* 调整代码块字体大小 */
+    pre, code {
+      font-size: 0.85em;
+    }
+    
+    /* 调整数学公式字体大小 */
+    .MathJax {
+      font-size: 100% !important;
+    }
+    
+    .MathJax_Display {
+      font-size: 100% !important;
+      margin: 0.4em 0 !important;
+    }
+    
+    /* 调整行内公式大小 */
+    .MathJax_SVG_Display {
+      font-size: 100% !important;
+    }
+    
+    /* 解决可能的KaTeX样式问题 */
+    .katex { 
+      font-size: 90% !important; 
+    }
+    
+    .katex-display > .katex { 
+      font-size: 85% !important; 
+    }
+    
+    /* 调整表格字体大小 */
+    table {
+      font-size: 0.85em;
+    }
+    
+    /* 调整引用块字体大小 */
+    blockquote {
+      font-size: 0.85em;
+      padding: 0.5em 0.5em;
+      margin: 0.5em 0 !important; /* 减小上下外边距 */
+    }
+    /* 确保最后一个元素没有底部边距 */
+    blockquote p:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* 调整强调文字的大小 */
+    strong, em, b, i {
+      font-size: inherit;
+    }
+  }
+  
+  /* 特定为技术博文调整样式 */
+  .tech .page__content {
+    font-size: 0.9em;
+  }
