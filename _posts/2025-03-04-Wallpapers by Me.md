@@ -2,7 +2,8 @@
 title: "Wallpapers Took by Me"
 categories: casual
 tags: [Photography]
-use_math: true
+header:
+  teaser: /assets/images/guguanyinchansi.jpg 
 ---
 
 I took these photos in the past few years. 
