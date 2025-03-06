@@ -1,0 +1,75 @@
+<!-- <div class="visitor-counter">
+<h4><i class="fas fa-chart-bar" aria-hidden="true"></i> Visitor Stats</h4>
+
+<div id="counter-placeholder">
+    </a>
+        <a href="https://info.flagcounter.com/6NuX"><img src="https://s05.flagcounter.com/count2/6NuX/bg_FFFFFF/txt_000000/border_CCCCCC/columns_2/maxflags_10/viewers_0/labels_0/pageviews_1/flags_0/percent_0/" alt="Flag Counter" border="0">
+    </a>
+</div>
+
+<div class="privacy-note">
+    <small><em>Visitor data collected via Google Analytics</em></small>
+</div>
+</div> -->
+
+<!-- flag counter thinks Taiwan prov is a country, use countapi instead -->
+
+<div class="visitor-counter">
+  <h4><i class="fas fa-chart-bar" aria-hidden="true"></i> Visitor Stats</h4>
+  
+  <div class="counter-display">
+    <p>Page Views: <span id="page-counter">...</span></p>
+    <p>Site Visits: <span id="site-counter">...</span></p>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get clean page path for the counter key
+      const pagePath = window.location.pathname.replace(/\//g, '-').replace(/-$/g, '') || 'home';
+      
+      // Create unique namespaced keys
+      const namespace = 'jaimeparker';
+      const pageKey = pagePath.startsWith('-') ? pagePath.substring(1) : pagePath;
+      const siteKey = 'site-total';
+      
+      // Helper function to fetch counter data
+      function fetchCounter(key, elementId) {
+        console.log('Fetching counter for: ' + key); // Debug log
+        
+        // Use GET request instead of hit to avoid CORS issues in development
+        const url = 'https://api.countapi.xyz/hit/' + namespace + '/' + key;
+        
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response error: ' + response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            console.log('Counter data for ' + key + ':', data); // Debug log
+            const element = document.getElementById(elementId);
+            if (element && data && data.value !== undefined) {
+              element.textContent = data.value.toLocaleString();
+            } else {
+              throw new Error('Invalid data or element not found');
+            }
+          })
+          .catch(error => {
+            console.error('Counter error for ' + key + ':', error); // Error log
+            document.getElementById(elementId).textContent = '0';
+          });
+      }
+      
+      // Fetch the counters with slight delay between them
+      fetchCounter(pageKey, 'page-counter');
+      setTimeout(() => {
+        fetchCounter(siteKey, 'site-counter');
+      }, 100);
+    });
+  </script>
+  
+  <div class="privacy-note">
+    <small><em>Counter powered by CountAPI</em></small>
+  </div>
+</div>

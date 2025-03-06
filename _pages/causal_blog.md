@@ -6,4 +6,4 @@ taxonomy: casual
 entries_layout: grid
 ---
 
-这里是我的随笔和日常感想...
+Here is my life blog.

@@ -16,9 +16,11 @@ main:
     url: /research/
   - title: "Publications"
     url: /publications/
-  - title: "Projects"
-    url: /projects/
+  # - title: "Projects"
+  #   url: /projects/
   - title: "Tech Blog"
     url: /tech_blog/
   - title: "Casual Blog"
     url: /casual_blog/
+  - title: "About"
+    url: /about/

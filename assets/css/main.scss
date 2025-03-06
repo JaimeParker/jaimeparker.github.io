@@ -82,3 +82,81 @@ search: false
   .tech .page__content {
     font-size: 0.9em;
   }
+
+
+/* Visitor counter styles - for use in page content (light background) */
+.visitor-counter {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  h4 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .counter-display {
+    p {
+      margin: 0.25rem 0;
+      color: #555;
+      
+      span {
+        font-weight: bold;
+        color: #0066cc;  /* Blue color for counter numbers */
+      }
+    }
+  }
+  
+  #counter-placeholder {
+    margin: 1rem 0;
+  }
+  
+  .privacy-note {
+    font-size: 0.75em;
+    color: #777;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Footer visitor counter styles - for use in footer (dark background) */
+.page__footer-visitor-counter {
+  margin: 1rem auto;
+  max-width: 400px;
+  text-align: center;
+  
+  .visitor-counter {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    
+    h4 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      color: #fff;  /* White text for dark background */
+    }
+    
+    .counter-display {
+      p {
+        margin: 0.25rem 0;
+        color: #f0f0f0;  /* Light gray text for readability */
+        
+        span {
+          font-weight: bold;
+          color: #66ccff;  /* Light blue for dark background */
+        }
+      }
+    }
+    
+    .privacy-note small {
+      color: #ccc;
+      font-size: 0.7em;
+    }
+  }
+}
+
