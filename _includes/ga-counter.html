@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visitor Stats with Google Analytics</title>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  <style>
+    /* Add basic styling for the counter */
+    .visitor-counter {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin-top: 20px;
+    }
+    .counter-display {
+      font-size: 1.2em;
+    }
+    .counter-display p {
+      margin: 5px 0;
+    }
+    .ga-dashboard-link {
+      color: #0073e6;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="visitor-counter">
+    <h4>Visitor Statistics</h4>
+    <div class="counter-display">
+      <p>Currently Online: <span id="ga-active-users">Loading...</span></p>
+      <p>Today's Visitors: <span id="ga-today-visitors">Loading...</span></p>
+      <p>Total Page Views: <span id="ga-total-views">Loading...</span></p>
+    </div>
+    <div id="ga-error" style="color: red; display: none;">Unable to fetch data. Please try again later.</div>
+  </div>
+
+  <script>
+    // Set your Google Analytics View ID
+    const VIEW_ID = 'ga:YOUR_VIEW_ID';  // Replace with your Google Analytics View ID
+
+    // Initialize the API client library
+    function initGA() {
+      gapi.client.setApiKey('YOUR_API_KEY');  // Replace with your Google API Key
+      gapi.client.load('https://analyticsreporting.googleapis.com/$discovery/rest?version=v4', 'v4', function() {
+        // Check if the API is loaded successfully and fetch data
+        getGAData();
+      });
+    }
+
+    // Fetch Google Analytics data (Active users, Total visitors, etc.)
+    function getGAData() {
+      const request = gapi.client.analyticsdata.properties.runReport({
+        property: `properties/YOUR_PROPERTY_ID`,  // Replace with your property ID
+        dateRanges: [{ startDate: '7daysAgo', endDate: 'today' }],
+        dimensions: [{ name: 'date' }],
+        metrics: [
+          { name: 'activeUsers' },
+          { name: 'totalUsers' },
+          { name: 'screenPageViews' }
+        ]
+      });
+
+      request.execute(function(response) {
+        if (response.error) {
+          console.error("Error fetching GA data:", response.error.message);
+          document.getElementById('ga-error').style.display = 'block';
+        } else {
+          const activeUsers = response.rows[0].metricValues[0].value;
+          const totalUsers = response.rows[0].metricValues[1].value;
+          const totalPageViews = response.rows[0].metricValues[2].value;
+
+          document.getElementById('ga-active-users').textContent = activeUsers;
+          document.getElementById('ga-today-visitors').textContent = totalUsers;
+          document.getElementById('ga-total-views').textContent = totalPageViews;
+        }
+      });
+    }
+
+    // Load the API and initialize the request
+    gapi.load('client:auth2', initGA);
+  </script>
+
+</body>
+</html>
