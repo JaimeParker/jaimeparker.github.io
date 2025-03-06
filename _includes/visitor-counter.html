@@ -23,49 +23,108 @@
   </div>
   
   <script>
+    // Function to get a cookie value by name
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+    
+    // Function to set a cookie
+    function setCookie(name, value, days) {
+      let expires = "";
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+    
+    // Initialize counter
     document.addEventListener('DOMContentLoaded', function() {
       // Get clean page path for the counter key
-      const pagePath = window.location.pathname.replace(/\//g, '-').replace(/-$/g, '') || 'home';
+      const pathName = window.location.pathname;
+      const pagePath = pathName === "/" ? "home" : pathName.replace(/\//g, '-').replace(/^-|-$/g, '');
       
       // Create unique namespaced keys
-      const namespace = 'jaimeparker';
-      const pageKey = pagePath.startsWith('-') ? pagePath.substring(1) : pagePath;
+      const namespace = 'jaimeparker-github-io'; // Use full domain as namespace
+      const pageKey = pagePath;
       const siteKey = 'site-total';
       
-      // Helper function to fetch counter data
-      function fetchCounter(key, elementId) {
-        console.log('Fetching counter for: ' + key); // Debug log
+      // Check if already counted this session
+      const visitedPages = getCookie('visited_pages') ? JSON.parse(getCookie('visited_pages')) : {};
+      const alreadyVisitedPage = visitedPages[pagePath];
+      const alreadyVisitedSite = getCookie('visited_site');
+      
+      // Update cookies to track visits
+      if (!alreadyVisitedPage) {
+        visitedPages[pagePath] = true;
+        setCookie('visited_pages', JSON.stringify(visitedPages), 1); // 1 day expiration
+      }
+      
+      if (!alreadyVisitedSite) {
+        setCookie('visited_site', 'true', 1); // 1 day expiration
+      }
+      
+      // Helper function for safer counter fetching
+      function safelyFetchCounter(key, elementId, increment) {
+        // Add timestamp to bypass cache
+        const cacheBuster = new Date().getTime();
+        let url;
         
-        // Use GET request instead of hit to avoid CORS issues in development
-        const url = 'https://api.countapi.xyz/hit/' + namespace + '/' + key;
+        if (increment) {
+          url = `https://api.countapi.xyz/hit/${namespace}/${key}?_=${cacheBuster}`;
+        } else {
+          url = `https://api.countapi.xyz/get/${namespace}/${key}?_=${cacheBuster}`;
+        }
         
-        fetch(url)
+        // Set a timeout for the fetch
+        const fetchPromise = fetch(url);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timed out')), 5000)
+        );
+        
+        Promise.race([fetchPromise, timeoutPromise])
           .then(response => {
             if (!response.ok) {
-              throw new Error('Network response error: ' + response.status);
+              throw new Error(`Network error: ${response.status}`);
             }
             return response.json();
           })
           .then(data => {
-            console.log('Counter data for ' + key + ':', data); // Debug log
-            const element = document.getElementById(elementId);
-            if (element && data && data.value !== undefined) {
-              element.textContent = data.value.toLocaleString();
+            if (data && typeof data.value === 'number') {
+              document.getElementById(elementId).textContent = data.value.toLocaleString();
             } else {
-              throw new Error('Invalid data or element not found');
+              throw new Error('Invalid data format');
             }
           })
           .catch(error => {
-            console.error('Counter error for ' + key + ':', error); // Error log
+            console.error(`Counter error for ${key}:`, error);
             document.getElementById(elementId).textContent = '0';
+            
+            // If counter doesn't exist yet, create it
+            if (increment && (error.message.includes('404') || error.message.includes('Invalid data'))) {
+              fetch(`https://api.countapi.xyz/create?namespace=${namespace}&key=${key}&value=1`)
+                .then(response => response.json())
+                .then(data => {
+                  if (data && typeof data.value === 'number') {
+                    document.getElementById(elementId).textContent = '1';
+                  }
+                })
+                .catch(e => console.error('Error creating counter:', e));
+            }
           });
       }
       
-      // Fetch the counters with slight delay between them
-      fetchCounter(pageKey, 'page-counter');
+      // Fetch page counter (increment only if not already counted this session)
+      safelyFetchCounter(pageKey, 'page-counter', !alreadyVisitedPage);
+      
+      // Fetch site counter (increment only if not already counted this session)
       setTimeout(() => {
-        fetchCounter(siteKey, 'site-counter');
-      }, 100);
+        safelyFetchCounter(siteKey, 'site-counter', !alreadyVisitedSite);
+      }, 300);
     });
   </script>
   
