@@ -26,7 +26,7 @@ url                      : "https://jaimeparker.github.io/"
 baseurl                  : # the subpath of your site, e.g. "/blog"
 repository               : "Jaimeparker/jaimeparker.github.io"
 teaser                   : #"/assets/images/logo.jpg"
-logo                     : #"/assets/images/logo.jpg"
+logo                     : "/assets/images/dear.jpg"
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
 breadcrumbs              : # true, false (default)
 words_per_minute         : 200
