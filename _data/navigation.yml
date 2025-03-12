@@ -22,5 +22,5 @@ main:
     url: /tech_blog/
   - title: "Casual Blog"
     url: /casual_blog/
-  - title: "About"
-    url: /about/
+  # - title: "About"
+  #   url: /about/
