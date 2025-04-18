@@ -139,19 +139,19 @@ Then apply the softmax function to each row to get the attention weights:
 <img src="https://pic3.zhimg.com/v2-96a3716cf7f112f7beabafb59e84f418_1440w.jpg" 
      alt="softmax" 
      style="width: 75%; max-width: 600px; display: block; margin: 1em auto;" />
-<p style="text-align: center;"><em>Figure: Apply softmax on rows$</em></p>
+<p style="text-align: center;"><em>Figure: Apply softmax on rows</em></p>
 
 Multiply the attention weights with the values to get the output:
 
 <img src="https://pic2.zhimg.com/v2-7ac99bce83713d568d04e6ecfb31463b_1440w.jpg" 
      alt="softmax" 
      style="width: 75%; max-width: 600px; display: block; margin: 1em auto;" />
-<p style="text-align: center;"><em>Figure: Apply softmax on rows$</em></p>
+<p style="text-align: center;"><em>Figure: Multiply values</em></p>
 
 <img src="https://pic1.zhimg.com/v2-27822b2292cd6c38357803093bea5d0e_1440w.jpg" 
      alt="softmax" 
      style="width: 75%; max-width: 600px; display: block; margin: 1em auto;" />
-<p style="text-align: center;"><em>Figure: Apply softmax on rows$</em></p>
+<p style="text-align: center;"><em>Figure: Get Output Z</em></p>
 
 
 ### 3.3 Output of Self-Attention
@@ -178,7 +178,7 @@ $$
 ## 4. Architecture of Encoder
 
 <figure class="align-center">
-  <img src="/assets/images/transformer_arch.png" alt="Transformer Arch" style="width: 100%;">
+  <img src="/assets/images/transformer_arch.png" alt="Transformer Arch" style="width: 50%;">
   <figcaption>The Transformer - model architecture.</figcaption>
 </figure>
 
