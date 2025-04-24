@@ -55,7 +55,7 @@ $$
 Q^*(s, a) = \max_{\pi} Q^\pi(s, a)
 $$
 
-That is, $Q^*(s, a)$ gives the expected return of taking action $a$ in state $s$ and thereafter following the **optimal policy** $\pi^*$.
+That is, $Q^{*}(s, a)$ gives the expected return of taking action $a$ in state $s$ and thereafter following the **optimal policy** $\pi^{*}$.
 
 #### 1.2.1 Bellman Optimality Equation for $Q^*$
 
@@ -295,7 +295,7 @@ $$
 
 DQN is not a new algorithm; it is a **practical instantiation of Q-learning using function approximation**. It preserves the essential theoretical structure of Q-learning:
 
-<mark>**Bellman Backup**</mark>
+<mark>Bellman Backup</mark>
 
 Both use the **Bellman optimality equation** to update the Q-function:
 
@@ -311,15 +311,15 @@ $$
 
 Here, $\theta$ are the parameters of the Q-network.
 
-<mark>**Bootstrapping**</mark>
+<mark>Bootstrapping</mark>
 
 Both perform **bootstrapped updates** — they use current estimates of $Q(s', a')$ to update $Q(s,a)$, without requiring full returns.
 
-<mark>**Off-Policy Learning**</mark>
+<mark>Off-Policy Learning</mark>
 
 Both are **off-policy**: they learn the optimal Q-function independently of the behavior policy (e.g., $\epsilon$-greedy exploration).
 
-<mark>**Implicit Greedy Policy Improvement**</mark>
+<mark>Implicit Greedy Policy Improvement</mark>
 
 Neither explicitly stores a policy. Instead, the action policy is derived from the current Q-function:
 
@@ -507,7 +507,7 @@ This small change significantly reduces overestimation bias.
 | Overestimation Bias   | High (especially early in training)        | Reduced via decoupling                                       |
 | Convergence Stability | Sensitive to noise and high variance       | Empirically more stable                                      |
 
-<mark>**TD Target in DQN**</mark>
+<mark>TD Target in DQN</mark>
 
 In **standard DQN**, the TD target is:
 
@@ -525,7 +525,7 @@ Problem:
 - When Q-values are noisy (e.g., early in training), the max operator tends to **select overestimated values**, causing **positive bias** in the TD target.
 - This is known as **overestimation bias**, and it accumulates over time, leading to unstable learning or convergence to suboptimal policies.
 
-<mark>**TD Target in Double DQN**</mark>
+<mark>TD Target in Double DQN</mark>
 
 In **Double DQN**, the TD target is modified to **decouple** action selection and action evaluation:
 
@@ -721,3 +721,376 @@ A^\pi(s, a) = Q^\pi(s, a) - V^\pi(s)
 $$
 
 ## 4. Soft Actor-Critic (SAC)
+
+现在终于到SAC本身了。
+
+SAC都融合了什么呢？
+
+* Function Approximation 函数近似
+* <b>Stochastic Policy 随机策略</b> 随机策略在机器人控制上往往是一个更好的做法，完成一个目标不一定只有一种解法，当然你很难证明RL的最优性，尤其是随机测略下的最优性。
+* Maximum Entropy Reinforcement Learning 最大熵强化学习
+
+它的核心idea是在最大化return的同时，最大化entropy以鼓励探索。
+
+标准强化学习的目标是通过学习一个策略 $\pi(a_t,s_t)$ 来最大化奖励期望，即最大化：
+
+$$
+\sum_t \mathbb{E}_{(\mathbf{s}_t, \mathbf{a}_t) \sim \rho_{\pi}} \left[ r(\mathbf{s}_t, \mathbf{a}_t) \right] \tag{4.1}
+$$
+
+而最大熵强化学习的目标是最大化奖励和熵的加权和，即：
+
+$$
+\pi^* = \arg\max_\pi \sum_t \mathbb{E}_{(\mathbf{s}_t, \mathbf{a}_t) \sim \rho_{\pi}} \left[ r(\mathbf{s}_t, \mathbf{a}_t) + \alpha \mathcal{H}(\pi(\cdot|\mathbf{s}_t)) \right] \tag{4.2}
+$$
+
+where
+
+* $\alpha$ is the temperature parameter that determines the relative importance of the entropy term versus the reward, and thus controls the stochasticity of the optimal policy. 也就是控制exploration和exploitation的trade-off
+* 传统的最大熵是在 $\alpha \rightarrow 0$ 时收敛到标准强化学习的目标函数。SAC在其中添加了一个 discount factor $\gamma$ 来确保 the sum of expected rewards (and entropy) is finite.
+
+使用最大熵做objective有如下好处，
+
+* 鼓励 policy explore more widely，while giving up on clearly unpromising avenues.
+* 同时策略也可以学习到多种 near-optimal behaviors.
+* 在实际训练中，作者发现与PPO相比，we observe improved exploration and learning speed.
+* 有一点作者在此处没提到，就是面对干扰的 robustness，或者 generalization 能力，我认为这正是由于其鼓励探索，以及可以学习到多种 near-optimal behaviors 所得到的能力
+
+接下来我们将仿照论文的行文逻辑，对 SAC 进行分析。
+
+### 4.1 From Soft Policy Iteration to Soft Actor-Citic
+
+作者提到，in this section, we treat the temperature $\alpha$ as a constant.
+但之后会对其扩展到自动系数。
+
+off-policy SAC 可以从最大熵变种的 policy iteration 推导出。
+
+#### 4.1.1 Soft Policy Iteration
+
+在 policy evaluation 阶段，我们希望根据 maximum entropy 的目标函数来计算当前策略 $\pi$ 的 value function $V^\pi$。
+
+让我们关注论文中的叙述：
+
+For a fixed policy, the **soft Q-value** can be computed iteratively, starting from any function $Q: \mathcal{S} \times \mathcal{A} \rightarrow \mathbb{R}$ and repeatedly applying a modified Bellman backup  operator $\mathcal{T}_\pi$ given by
+
+$$
+\mathcal{T}_\pi Q(s, a) = r(\mathbf{s}_t, \mathbf{a}_t) + \gamma \mathbb{E}_{\mathbf{s}_{t+1} \sim p} \left[ V(\mathbf{s}_{t+1}) \right] \tag{4.3}
+$$
+
+where
+
+$$
+V_{\mathbf{s}_t} = \mathbb{E}_{\mathbf{a}_t \sim \pi} \left[ Q(\mathbf{s}_t, \mathbf{a}_t) - \alpha \log \pi(\mathbf{a}_t | \mathbf{s}_t) \right] \tag{4.4}
+$$
+
+is the soft state value function. We can obtain the **soft Q-function** for any policy $\pi$ by repeatedly applying the operator $\mathcal{T}_\pi$ as formalized below.
+
+这时，我们先跳出论文，回头看这个 Maximum entropy RL 的 Bellman equation，参考[最前沿：深度解读Soft Actor-Critic 算法](https://zhuanlan.zhihu.com/p/70360272)
+
+先回顾一下 dynamic programming 的 Bellman equation：
+
+<img src="https://pic2.zhimg.com/v2-a3f0b9c228619f48a532b5edf3dc3dab_1440w.jpg" 
+     alt="Bellman equation" 
+     style="width: 100%; max-width: 600px; display: block; margin: 1em auto;" />
+<p style="text-align: center;"><em>Figure: Bellman Equation</em></p>
+
+我们常见的对于Q函数的Bellman equation是这样的：
+
+$$
+q_{\pi}(s, a) = r(s, a) + \gamma \sum_{s'} p(s'|s, a) v_{\pi}(s') \tag{4.5}
+$$
+
+那么对于 Stochastic policy $\pi$，我们可以将其改写为：
+
+$$
+q_\pi(s, a) = r(s, a) + \gamma \sum_{s'} P^a_{ss'} \sum_{a'} \pi(a' \mid s') q_\pi(s', a')
+$$
+
+where
+
+* r(s, a) 是在状态 $s$ 下采取动作 $a$ 的奖励, reward of taking action $a$ in state $s$.
+* $P^a_{ss'}$ 是在状态 $s$ 下采取动作 $a$ 转移到状态 $s'$ 的概率, probability of transition from state $s$ to state $s'$ given action $a$. $P^a_{ss'} = P(s' \mid s, a)$
+* 正是第二项 $\sum_{a'}$ 的部分，incorporates the expectation over the policy $\pi(a'|s')$.
+* $q_\pi(s', a')$ is Soft Q-value for future state-action pairs. The recursive component of the Bellman equation — provides the basis for dynamic programming. 它是一个递归的方程，提供了动态规划的基础。
+
+对于 Maximum entropy 的目标，SAC 的做法是将 entropy 作为 reward 的一部分，而q值函数的定义也相应地进行了修改（回忆动作价值函数Q的定义，就是在当前状态下采取动作a的期望回报，而回报是当前状态下采取动作a的奖励加上未来状态的期望回报）。
+
+我们首先回顾一下，对于一个离散的随机策略(discrete stochastic policy) $\pi(a|s)$，the Shannon entropy of the policy is defined as:
+
+$$
+\mathcal{H}(\pi(\cdot \mid s)) = -\sum_a \pi(a \mid s) \log \pi(a \mid s) \tag{4.6}
+$$
+
+This measures the uncertainty or randomness of the policy at state $s$
+
+* Higher entropy → more randomness (uniform policy)
+* Lower entropy → more certainty (greedy policy)
+
+Now recall a key result from probability theory:
+
+The **expectation** of a function $f(a)$ under distribution $\pi(a \mid s)$ is:
+
+$$
+\mathbb{E}_{a \sim \pi} [f(a)] = \sum_a \pi(a \mid s) f(a) \tag{4.7}
+$$
+
+So apply this to entropy:
+
+$$
+\begin{align*}
+\mathcal{H}(\pi(\cdot \mid s)) 
+&= -\sum_a \pi(a \mid s) \log \pi(a \mid s) \\
+&= -\mathbb{E}_{a \sim \pi} \left[ \log \pi(a \mid s) \right]
+\end{align*} \tag{4.8}
+$$
+
+Thus, entropy can be equivalently expressed as a **negative expectation over log-likelihood**:
+
+$$
+\mathcal{H}(\pi(\cdot|s)) = -\sum_{a} \pi(a \mid s) \log \pi(a \mid s) = -\mathbb{E}_{a \sim \pi} \left[ \log \pi(a \mid s) \right] \tag{4.9}
+$$
+
+之后我们将 entropy 的计算加入原本的 q 值函数中，得到 Soft Q-value function:
+
+$$
+q_{\pi}(s,a)=r(s,a) + \gamma \sum_{s'} P^a_{ss'} \sum_{a'} \pi(a'|s') \left( q_{\pi}(s',a') - \alpha \log \pi(a'|s') \right) \tag{4.10}
+$$
+
+可以通过下面两张图来理解：
+
+<img src="https://pica.zhimg.com/v2-dcee5ef22e5784ce05725bdfa4cd3f18_1440w.jpg" 
+     alt="soft q" 
+     style="width: 100%; max-width: 600px; display: block; margin: 1em auto;" />
+<p style="text-align: center;"><em>Figure: Soft Q value 1</em></p>
+
+<img src="https://pic3.zhimg.com/v2-f9b6d1e0a425ba5402553fa28871e908_1440w.jpg" 
+     alt="soft q" 
+     style="width: 100%; max-width: 600px; display: block; margin: 1em auto;" />
+<p style="text-align: center;"><em>Figure: Soft Q value 2</em></p>
+
+我们知道在 Dynamic Programming Backup 中，更新 $Q$ 值的公式是：
+
+$$
+Q(s, a) \leftarrow r + \gamma \mathbb{E}_{s'} \left[ Q(s', a') \right] \tag{4.11}
+$$
+
+那么根据公式 4.10， 我们可以得到 Soft Bellman Backup 的公式：
+
+$$
+Q_{\text{soft}}(s, a) \leftarrow r + \gamma \mathbb{E}_{s'} \left[ Q_{\text{soft}}(s', a') - \alpha \log \pi(a'|s') \right] \tag{4.12}
+$$
+
+这是直接使用 dynamic programming, 将 entropy 嵌入到了 Q 值函数中计算得到的结果。
+
+类似地，我们可以反过来把 entropy 作为 reward 的一部分，定义 Soft reward function:
+
+$$
+r_{\text{soft}}(s, a) = r(s, a) - \alpha \log \pi(a|s) \tag{4.13}
+$$
+
+那么我们把 式4.13 带入到 dynamic programming backup 中，同样可以得到 Soft Bellman Backup 的公式：
+
+$$
+\text{derive this later}
+$$
+
+同时，我们知道：
+
+$$
+Q_{s,a} = r_{s,a} + \gamma \mathbb{E}_{s'} \left[ V_{s'} \right] \tag{4.14}
+$$
+
+因此就有 Soft value function 的定义：
+
+$$
+V_{\text{soft}}(s) = \mathbb{E}_{a \sim \pi} \left[ Q_{\text{soft}}(s, a) - \alpha \log \pi(a|s) \right] \tag{4.15}
+$$
+
+至此我们理清了论文中的两个式子，即本文中的式4.3和式4.4。
+
+好，我们回到论文中。
+
+##### Lemma1 Soft Policy Evaluation
+
+In the policy improvement step, we update the policy towards the exponential of the new soft Q function. This particular choice of update can be guaranteed to result in an improved policy in terms of its soft value. Since in practice we prefer policies that are tractable, we will additionally restrict the policy to some set of policies $\Pi$ , which can correspond, for example, to a parameterized family of distributions such as Gaussians.
+
+我们刚刚其实已经论证过了 Soft 的部分，不过正如[最前沿：深度解读Soft Actor-Critic 算法](https://zhuanlan.zhihu.com/p/70360272)中提到的，
+
+> 我们注意到上面的整个推导过程都是围绕maximum entropy，和soft 好像没有什么直接关系。所以，为什么称为soft？哪里soft了？以及为什么soft Q function能够实现maximum entropy？
+
+> 理解清楚这个问题是理解明白soft q-learning及sac的关键！
+> SAC这篇paper直接跳过了soft Q-function的定义问题，因此，要搞清楚上面的问题，我们从Soft Q-Learning的paper来寻找答案。
+
+参考 [BAIR blog post on Soft Q-learning](https://bair.berkeley.edu/blog/2017/10/06/soft-q-learning/)：
+
+<figure class="align-center">
+  <img src="/assets/images/figure_3a_unimodal-policy.png" alt="A multimodal Q-function" style="width: 80%;">
+  <figcaption>A multimodal Q-function.</figcaption>
+</figure>
+
+这张图很明显说明了 stochastic policy 的好处，面对多模的 Q function，传统的 RL 只能收敛到一个 max 选择，而更优的办法是右图，让 policy 也直接符合 Q 的分布。
+
+右图 (b) 中使用了指数函数的形式，
+
+$$
+\pi(a \mid s) \propto \exp Q(s, a) 
+$$
+
+这其实来自 Boltzmann distribution，可以先将策略写为：
+
+$$
+\pi(a \mid s) \propto \exp (-\epsilon (s,a))
+$$
+
+其中 $\epsilon$ 是能量函数，将 $-f(x) = \epsilon$，可以有 Energy based model 的形式：
+
+
+<img src="https://pic3.zhimg.com/v2-2ce2819f8a514ee7b51bf67746bdca3c_1440w.jpg" 
+     alt="EBM" 
+     style="width: 100%; max-width: 600px; display: block; margin: 1em auto;" />
+<p style="text-align: center;"><em>Figure: Energy based model</em></p>
+
+We start from energy-based form:
+
+$$
+\pi(a \mid s) \propto \exp \left( -\mathcal{E}(s, a) \right)
+$$
+
+Now, if we define the energy function as the negative of the Q-function, i.e.,
+
+$$
+\mathcal{E}(s, a) = -Q(s, a)
+$$
+
+Then the policy becomes:
+
+$$
+\pi(a \mid s) \propto \exp(Q(s, a))
+$$
+
+我们要发现该式的形式正好就是最大熵RL的optimal policy最优策略的形式，而这实现了soft q function和maximum entropy的连接。
+This is the maximum entropy optimal policy form — also known as the Boltzmann (Gibbs) policy.
+
+However, in practice, to control the stochasticity, we introduce a temperature parameter $\alpha$:
+
+$$
+\pi(a \mid s) \propto \exp\left( \frac{1}{\alpha} Q(s, a) \right)
+$$
+
+or
+
+$$
+\pi(a \mid s) = \frac{1}{Z(s)} \exp\left( \frac{1}{\alpha} Q(s, a) \right) \tag{4.16}
+$$
+
+<img src="https://pica.zhimg.com/v2-ffb1457e6960e6d0b64dfe6bc72ebeee_1440w.jpg" 
+     alt="EBM" 
+     style="width: 100%; max-width: 600px; display: block; margin: 1em auto;" />
+<p style="text-align: center;"><em>Figure: EBP, SVF and MEO</em></p>
+
+<mark>Lemma1 (Soft Policy Evaluation)</mark>
+ 
+Given a policy $\pi$, the sequence of Q-functions $Q^k$ defined recursively by
+
+$$
+Q^{k+1}(s, a) \leftarrow r(s, a) + \gamma \mathbb{E}_{s' \sim p} \left[ \mathbb{E}_{a' \sim \pi} \left[ Q^k(s', a') - \alpha \log \pi(a' \mid s') \right] \right]
+$$
+
+converges to the soft Q-function of $\pi$:
+
+$$
+Q^\pi(s, a) = \lim_{k \to \infty} Q^k(s, a)
+$$
+
+所以最终，policy evaluation 用的 Soft Q function 就是我们之前定义的：
+
+$$
+Q^\pi(s, a) = r(s, a) + \gamma \mathbb{E}_{s'} \left[ \mathbb{E}_{a' \sim \pi} \left[ Q^\pi(s', a') - \alpha \log \pi(a' \mid s') \right] \right] \tag{4.17}
+$$
+
+展开后就是 式4.3 和式4.4。
+
+policy evaluation 就是固定 policy，通过 Bellman backup 迭代计算得到 soft Q function 直到收敛。
+下一步的 policy improvement 就是基于当前的 soft Q function 来更新策略。
+
+##### Lemma2 Soft Policy Improvement
+
+现在我们进入 Soft Policy Iteration 的第二步 —— 策略改进（policy improvement）。在这一步中，我们希望基于当前策略的软Q值 $Q^{\pi_{\text{old}}}(s, a)$ 得到一个更优的策略 $\pi_{\text{new}}$。
+
+具体地，我们将目标策略 $\pi_{\text{new}}$ 选为最小化 KL 散度（Kullback-Leibler divergence）到 soft Q-function 指定的 Boltzmann 分布：
+
+$$
+\pi_{\text{new}}(\cdot \mid s_t) = \arg\min_{\pi' \in \Pi} D_{\text{KL}} \left( \pi'(\cdot \mid s_t) \Big\| \frac{1}{Z^{\pi_{\text{old}}}(s_t)} \exp\left( \frac{1}{\alpha} Q^{\pi_{\text{old}}}(s_t, \cdot) \right) \right) \tag{4.18}
+$$
+
+这就是 [Soft Actor-Critic Algorithms and Applications](http://arxiv.org/abs/1812.05905) 中的 式4。
+
+where
+
+* $Z^{\pi_{\text{old}}}(s_t)$ 是归一化常数，确保 $\pi_{\text{new}}$ 是一个合法的概率分布。原文中称之为 partition function that normalizes the distribution, and while it is intractable in general, it does not contribute to the gradient with respect to the new policy and can thus be ignored. 对梯度没有贡献，因此可以忽略。
+  $$
+  Z^{\pi_{\text{old}}}(s_t) = \int_a \exp\left( \frac{1}{\alpha} Q^{\pi_{\text{old}}}(s_t, a) \right) da
+  $$
+* 引入了 KL divergence 来限制新策略 $\pi_{\text{new}}$ 和旧策略 $\pi_{\text{old}}$ 之间的差异，选择最小化 KL divergence 的新策略。
+* $\pi'(\cdot \mid s_t)$ 是我们从策略族 $\Pi$ 中选择的候选策略，通常为一类参数化分布，例如高斯分布族。
+* 右侧的 目标分布 是 soft Q 函数指定的 Boltzmann 分布，即：
+  $$
+  \pi^*(a \mid s) \propto \exp\left( \frac{1}{\alpha} Q^{\pi_{\text{old}}}(s, a) \right)
+  $$
+
+Why KL Divergence?
+
+该投影是将目标的 Boltzmann 策略 project 到我们可实现的策略族（如高斯策略）中最接近的一项：
+
+* 它保留了 最大熵行为 的特性；
+* 保证了策略的 可表达性 和 训练可行性；
+* 具有良好的梯度性质和收敛性。
+
+<mark>Lemma 2 (Soft Policy Improvement)</mark>
+
+Let $\pi_{\text{old}} \in \Pi$ and let $\pi_{\text{new}}$ be the optimizer of the KL projection problem in Equation (4.18). Then for all $(s_t, a_t) \in \mathcal{S} \times \mathcal{A}$ with $|\mathcal{A}| < \infty$, it holds that:
+
+$$
+Q^{\pi_{\text{new}}}(s_t, a_t) \geq Q^{\pi_{\text{old}}}(s_t, a_t)
+$$
+
+当我们反复进行 soft policy evaluation 与 soft policy improvement 步骤时，会产生一条策略序列：
+
+$$
+\pi^{(0)} \rightarrow \pi^{(1)} \rightarrow \dots \rightarrow \pi^*
+$$
+
+在 tabular setting 下，该过程可被证明将收敛到最优的 maximum entropy 策略：
+
+<mark>Theorem 1 (Soft Policy Iteration)</mark>
+
+Repeated application of soft policy evaluation and soft policy improvement from any $\pi \in \Pi$ converges to a policy $\pi^*$ such that:
+
+$$
+Q^{\pi^*}(s, a) \geq Q^{\pi}(s, a), \quad \forall \pi \in \Pi,\ (s, a) \in \mathcal{S} \times \mathcal{A}
+$$
+
+现在我们对 Soft Policy Improvement 做一个总结：
+
+* Soft policy improvement 不再是 greedy 地选择 $\argmax_{a} Q(s,a)$，而是以最小化 KL 散度为目标，选择一个新的策略 $\pi_{\text{new}}$
+* 其本质是策略朝着 Q 值分布更集中的区域靠近，但保留了一部分的熵，使策略更为鲁棒而又具有探索性
+* 在连续动作空间中，我们将此想法实现为 SAC 的 actor loss，基于reparameterization trick 直接优化
+
+#### 4.1.2 Soft Actor-Critic
+
+We will introduce the policy iteration in SAC, including policy evaluation and policy improvement.
+
+
+
+
+### 4.2 Automating Entropy Adjustment for Maximum Entropy RL
+
+### 4.3 Network Architecture and Training
+
+## Reference
+
+* [Reinforcement Learning with Deep Energy-Based Policies](https://arxiv.org/abs/1702.08165), Soft Q-learning
+* [Learning Diverse Skills via Maximum Entropy Deep Reinforcement Learning](https://bair.berkeley.edu/blog/2017/10/06/soft-q-learning/), BAIR blog post on Soft Q-learning
+* [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor](https://arxiv.org/abs/1801.01290), the first paper of SAC
+* [Soft Actor-Critic Algorithms and Applications](http://arxiv.org/abs/1812.05905), the second paper of SAC
+* [最前沿：深度解读Soft Actor-Critic 算法](https://zhuanlan.zhihu.com/p/70360272)
