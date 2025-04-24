@@ -3,6 +3,9 @@ title: "From Q-learning to Soft Actor Critic"
 categories: tech
 tags: [Reinforcement learning]
 use_math: true
+toc: true  # enables the sidebar TOC
+toc_label: "On this page"  # optional, custom title for TOC
+toc_sticky: true  # optional, makes the TOC stick while scrolling
 ---
 
 We shall introduce the foundation of value-base RL algos, Q-learning. Then from Q-learning to DQN, A2C, and finally to SAC.
@@ -19,7 +22,7 @@ In reinforcement learning, an agent interacts with a Markov Decision Process (MD
 - A reward function $r(s, a)$
 - A discount factor $\gamma \in [0, 1]$
 
-<mark>**State value function $V^\pi(s)$**</mark>
+<mark>State value function $V^\pi(s)$</mark>
 
 The **state-value function** under a policy $\pi$ is defined as the expected return when starting in state $s$ and following $\pi$ thereafter:
 
@@ -27,7 +30,7 @@ $$
 V^\pi(s) = \mathbb{E}_{\pi} \left[ \sum_{t=0}^{\infty} \gamma^t r(s_t, a_t) \mid s_0 = s \right]
 $$
 
-<mark>**Action value function $Q^\pi(s, a)$**</mark>
+<mark>Action value function $Q^\pi(s, a)$</mark>
 
 The **action-value function** under policy $\pi$ is the expected return starting from state $s$, taking action $a$, and then following policy $\pi$:
 
@@ -37,7 +40,7 @@ $$
 
 So compared to state value function, there is an action in this function.
 
-<mark>**Relationship Between $Q^\pi(s, a)$ and $V^\pi(s)$**</mark>
+<mark>Relationship Between $Q^\pi(s, a)$ and $V^\pi(s)$</mark>
 
 The value of a state can be expressed as the expected value over actions drawn from the policy:
 
@@ -55,7 +58,7 @@ $$
 Q^*(s, a) = \max_{\pi} Q^\pi(s, a)
 $$
 
-That is, $Q^{*}(s, a)$ gives the expected return of taking action $a$ in state $s$ and thereafter following the **optimal policy** $\pi^{*}$.
+That is, $Q^{\*}(s, a)$ gives the expected return of taking action $a$ in state $s$ and thereafter following the **optimal policy** $\pi^{\*}$.
 
 #### 1.2.1 Bellman Optimality Equation for $Q^*$
 
@@ -107,14 +110,14 @@ This is a form of **stochastic approximation** toward the fixed point of the Bel
 
 Q-learning can be interpreted as performing a form of **generalized policy iteration** (GPI), alternating between:
 
-<mark>**Policy Evaluation (Approximate)**</mark>
+<mark>Policy Evaluation (Approximate)</mark>
 
 Unlike classical policy evaluation (which assumes a fixed policy), Q-learning **bootstraps** the evaluation by updating $Q(s,a)$ based on one-step lookahead:
 
 - Uses the **greedy action** in the next state to evaluate the current state-action pair.
 - Does not wait for convergence — hence **approximate**.
 
-<mark>**Policy Improvement (Implicit)**</mark>
+<mark>Policy Improvement (Implicit)</mark>
 
 At any point, we can extract a greedy policy from $Q$:
 
@@ -726,7 +729,7 @@ $$
 
 SAC都融合了什么呢？
 
-* Function Approximation 函数近似
+* <b>Function Approximation 函数近似</b> the transition from theoretical soft policy iteration to the practical SAC algorithm, which means using a neural network to approximate the Q-function and a stochastic Gaussian policy with mean and std output by another network，也就是说，用神经网络来近似 Q function $Q_\theta(s, a)$，用另一个神经网络来近似策略分布 $\pi_\phi(a \mid s)$ 
 * <b>Stochastic Policy 随机策略</b> 随机策略在机器人控制上往往是一个更好的做法，完成一个目标不一定只有一种解法，当然你很难证明RL的最优性，尤其是随机测略下的最优性。
 * Maximum Entropy Reinforcement Learning 最大熵强化学习
 
@@ -810,12 +813,12 @@ where
 
 * r(s, a) 是在状态 $s$ 下采取动作 $a$ 的奖励, reward of taking action $a$ in state $s$.
 * $P^a_{ss'}$ 是在状态 $s$ 下采取动作 $a$ 转移到状态 $s'$ 的概率, probability of transition from state $s$ to state $s'$ given action $a$. $P^a_{ss'} = P(s' \mid s, a)$
-* 正是第二项 $\sum_{a'}$ 的部分，incorporates the expectation over the policy $\pi(a'|s')$.
+* 正是第二项 $\sum_{a'}$ 的部分，incorporates the expectation over the policy $\pi(a' \mid s')$.
 * $q_\pi(s', a')$ is Soft Q-value for future state-action pairs. The recursive component of the Bellman equation — provides the basis for dynamic programming. 它是一个递归的方程，提供了动态规划的基础。
 
 对于 Maximum entropy 的目标，SAC 的做法是将 entropy 作为 reward 的一部分，而q值函数的定义也相应地进行了修改（回忆动作价值函数Q的定义，就是在当前状态下采取动作a的期望回报，而回报是当前状态下采取动作a的奖励加上未来状态的期望回报）。
 
-我们首先回顾一下，对于一个离散的随机策略(discrete stochastic policy) $\pi(a|s)$，the Shannon entropy of the policy is defined as:
+我们首先回顾一下，对于一个离散的随机策略(discrete stochastic policy) $\pi(a \mid s)$，the Shannon entropy of the policy is defined as:
 
 $$
 \mathcal{H}(\pi(\cdot \mid s)) = -\sum_a \pi(a \mid s) \log \pi(a \mid s) \tag{4.6}
@@ -924,7 +927,7 @@ In the policy improvement step, we update the policy towards the exponential of 
 参考 [BAIR blog post on Soft Q-learning](https://bair.berkeley.edu/blog/2017/10/06/soft-q-learning/)：
 
 <figure class="align-center">
-  <img src="/assets/images/figure_3a_unimodal-policy.png" alt="A multimodal Q-function" style="width: 80%;">
+  <img src="/assets/images/figure_3a_unimodal-policy.png" alt="A multimodal Q-function" style="width: 100%;">
   <figcaption>A multimodal Q-function.</figcaption>
 </figure>
 
@@ -1048,7 +1051,7 @@ Why KL Divergence?
 
 <mark>Lemma 2 (Soft Policy Improvement)</mark>
 
-Let $\pi_{\text{old}} \in \Pi$ and let $\pi_{\text{new}}$ be the optimizer of the KL projection problem in Equation (4.18). Then for all $(s_t, a_t) \in \mathcal{S} \times \mathcal{A}$ with $|\mathcal{A}| < \infty$, it holds that:
+Let $\pi_{\text{old}} \in \Pi$ and let $\pi_{\text{new}}$ be the optimizer of the KL projection problem in Equation (4.18). Then for all $(s_t, a_t) \in \mathcal{S} \times \mathcal{A}$ with $\mid \mathcal{A}\mid < \infty$, it holds that:
 
 $$
 Q^{\pi_{\text{new}}}(s_t, a_t) \geq Q^{\pi_{\text{old}}}(s_t, a_t)
@@ -1072,20 +1075,182 @@ $$
 
 现在我们对 Soft Policy Improvement 做一个总结：
 
-* Soft policy improvement 不再是 greedy 地选择 $\argmax_{a} Q(s,a)$，而是以最小化 KL 散度为目标，选择一个新的策略 $\pi_{\text{new}}$
+* Soft policy improvement 不再是 greedy 地选择 $\arg \max_{a} Q(s,a)$，而是以最小化 KL 散度为目标，选择一个新的策略 $\pi_{\text{new}}$
 * 其本质是策略朝着 Q 值分布更集中的区域靠近，但保留了一部分的熵，使策略更为鲁棒而又具有探索性
 * 在连续动作空间中，我们将此想法实现为 SAC 的 actor loss，基于reparameterization trick 直接优化
 
 #### 4.1.2 Soft Actor-Critic
 
-We will introduce the policy iteration in SAC, including policy evaluation and policy improvement.
+> As discussed above, large continuous domains require us to derive a practical approximation to soft policy iteration. To that end, we will use function approximators for both the soft Q-function and the policy, and instead of running evaluation and improvement to convergence, alternate between optimizing both networks with stochastic gradient descent.
 
+这就是前文提到的 function approximation，用两个 nn 分别近似 Q-function 与 policy distribution。这对于连续控制非常必要（尽管表格型方法可以解决一些离散的问题）
 
+作者在论文中定义的这两个网络分别是：$Q_\theta(s, a)$， $\pi_\phi(a \mid s)$，网络的参数是 $\theta$ 和 $\phi$。
 
+<mark><b>Critic Loss: Soft Q-function</b></mark>
+
+The soft Q-function parameters can be trained to minimize the soft Bellman residual (equation 5 in SAC 2nd paper):
+
+$$
+J_Q(\theta) = \mathbb{E}_{(s_t, a_t) \sim \mathcal{D}} \left[ \frac{1}{2} \left( Q_\theta(s_t, a_t) - \left( r(s_t, a_t) + \gamma \mathbb{E}_{s_{t+1} \sim p} [V_{\bar{\theta}}(s_{t+1})] \right) \right)^2 \right] \tag{4.19}
+$$
+
+where the value function is implicitly parameterized through the soft Q-function parameters, and it can be optimized with stochastic gradients
+
+* $\bar{\theta}$ are parameters of target Q-network, updated via Polyak averaging.
+* the soft value function is defined as:
+  $$
+  V(s_{t+1}) = \mathbb{E}_{a_{t+1} \sim \pi_\phi} \left[ Q_{\bar{\theta}}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_{t+1} \mid s_{t+1}) \right]
+  $$
+
+The gradient of the Q loss is (equation 6 in SAC 2nd paper):
+
+$$
+\nabla_\theta J_Q(\theta) = \nabla_\theta Q_\theta(s_t, a_t) \left( Q_\theta(s_t, a_t) - \left( r + \gamma \left( Q_{\bar{\theta}}(s_{t+1}, a_{t+1}) - \alpha \log \pi_\phi(a_{t+1} \mid s_{t+1}) \right) \right) \right) \tag{4.20}
+$$
+
+也就是最小化 Q-function estimate 和 soft backup target 之间的均方误差，称为 soft Bellman residual；之后用 SGD 来优化 Q-function 的参数 $\theta$。
+
+<mark><b>Actor Loss: Policy Improvement via KL Minimization</b></mark>
+
+Instead of directly sampling from a Boltzmann distribution, SAC parameterizes the policy $\pi_{\phi}(a \mid s)$ and minimizes the soft policy loss derived from KL divergence (equation 7 in SAC 2nd paper):
+
+$$
+J_\pi(\phi) = \mathbb{E}_{s_t \sim \mathcal{D},\ a_t \sim \pi_\phi} \left[ \alpha \log \pi_\phi(a_t \mid s_t) - Q_\theta(s_t, a_t) \right] \tag{4.21}
+$$
+
+This loss encourages:
+
+* High Q-value actions (maximize $Q(s,a)$ )
+* High entropy (maximize $\mathcal{H}(\pi(a \mid s))$)
+
+<mark><b>Reparameterization Trick for Differentiable Sampling</b></mark>
+
+To enable low-variance gradient estimates, SAC reparameterizes the stochastic policy(equation 8 in SAC 2nd paper):
+
+$$
+a_t = f_\phi(\epsilon_t; s_t), \quad \epsilon_t \sim \mathcal{N}(0, I) \tag{4.22}
+$$
+
+The actor loss can be rewritten using reparameterization (equation 9 in SAC 2nd paper):
+
+$$
+J_\pi(\phi) = \mathbb{E}_{s_t, \epsilon_t} \left[ \alpha \log \pi_\phi(f_\phi(\epsilon_t; s_t) \mid s_t) - Q_\theta(s_t, f_\phi(\epsilon_t; s_t)) \right] \tag{4.23}
+$$
+
+And the gradient becomes (equation 10 in SAC 2nd paper):
+
+$$
+\nabla_\phi J_\pi(\phi) = \nabla_\phi \log \pi_\phi(a_t \mid s_t) + \left( \nabla_a \log \pi_\phi(a_t \mid s_t) - \nabla_a Q_\theta(s_t, a_t) \right) \nabla_\phi f_\phi(\epsilon_t; s_t) \tag{4.24}
+$$
 
 ### 4.2 Automating Entropy Adjustment for Maximum Entropy RL
 
+coming soon
+
 ### 4.3 Network Architecture and Training
+
+We present the Algorithm 1 table in paper [Soft Actor-Critic Algorithms and Applications](http://arxiv.org/abs/1812.05905) here:
+
+<figure class="align-center">
+  <img src="/assets/images/sac_algo.png" alt="SAC algo" style="width: 100%;">
+  <figcaption>SAC algorithm.</figcaption>
+</figure>
+
+#### 4.3.1 Network Architecture
+
+SAC uses the following components:
+
+<mark><b>Twin Q-Networks</b></mark>
+
+To reduce overestimation bias (inspired by Double Q-learning), SAC maintains **two independent Q-functions**:
+
+$$
+Q_{\theta_1}(s, a), \quad Q_{\theta_2}(s, a)
+$$
+
+* Each outputs a scalar Q-value.
+* Trained separately with identical targets.
+* Only the minimum of the two is used for **Actor updates and Critic targets**
+
+<mark><b>Stochastic Gaussian Policy Network (Actor)</b></mark>
+
+The policy is modeled as a **Gaussian distribution**:
+
+$$
+\pi_\phi(a \mid s) = \mathcal{N}(\mu_\phi(s), \sigma^2_\phi(s))
+$$
+
+The network outputs mean and log std: a = tanh(μ + σ ⊙ ε), ε ∼ N(0, I), Tanh squashing ensures actions lie in bounded ranges (e.g., [−1, 1]).
+
+<mark><b>Target Q Networks</b></mark>
+
+For stability, SAC uses target networks for both Q-functions:
+
+$$
+\bar{\theta}_i \leftarrow \tau \theta_i + (1 - \tau) \bar{\theta}_i, \quad \text{for } i = 1, 2
+$$
+
+* Updated with Polyak averaging (soft target update)
+* Used to compute the Bellman targets for critic loss
+
+<mark><b>Temperature Parameter $\alpha$</b></mark>
+
+A learnable scalar to control the trade-off between reward and entropy,
+
+Learned via dual gradient descent:
+
+$$
+J(\alpha) = \mathbb{E}_{a \sim \pi} \left[ -\alpha \log \pi(a \mid s) - \alpha \bar{\mathcal{H}} \right]
+$$
+
+And automatically tunes exploration vs. exploitation.
+
+#### 4.3.2 Training Procedure
+
+The SAC algorithm alternates between environment interaction and network optimization.
+
+**Collect experience from the environment**:
+
+$$
+a_t \sim \pi_\phi(a_t \mid s_t), \quad (s_t, a_t, r_t, s_{t+1}) \rightarrow \mathcal{D}
+$$
+
+**Critic update**:
+
+For each Q-function $Q_{\theta_i}$, minimize the soft Bellman error:
+
+$$
+J_Q(\theta_i) = \left( Q_{\theta_i}(s, a) - \hat{y} \right)^2
+$$
+
+where
+
+$$
+\hat{y} = r + \gamma \left( \min_{j} Q_{\bar{\theta}_j}(s', a') - \alpha \log \pi(a' \mid s') \right)
+$$
+
+**Actor update**:
+
+Maximize soft Q value + entropy:
+
+$$
+J_\pi(\phi) = \mathbb{E}_{s \sim \mathcal{D}, a \sim \pi_\phi} \left[ \alpha \log \pi_\phi(a \mid s) - Q_\theta(s, a) \right]
+$$
+
+**Temperature update**:
+
+$$
+J(\alpha) = \mathbb{E}_{a \sim \pi} \left[ -\alpha \log \pi(a \mid s) - \alpha \bar{\mathcal{H}} \right]
+$$
+
+**Target Q update**:
+
+$$
+\bar{\theta}_i \leftarrow \tau \theta_i + (1 - \tau) \bar{\theta}_i
+$$
+
+This architecture allows SAC to be sample efficient, robust to overestimation, and suitable for high-dimensional continuous control.
 
 ## Reference
 

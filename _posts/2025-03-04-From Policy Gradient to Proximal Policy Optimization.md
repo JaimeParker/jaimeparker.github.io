@@ -3,6 +3,9 @@ title: "From Policy Gradient to Proximal Policy Optimization"
 categories: tech
 tags: [Reinforcement learning]
 use_math: true
+toc: true  # enables the sidebar TOC
+toc_label: "On this page"  # optional, custom title for TOC
+toc_sticky: true  # optional, makes the TOC stick while scrolling
 ---
 
 Basis of Policy Gradient methods, from PG to PPO.

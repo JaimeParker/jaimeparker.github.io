@@ -3,6 +3,9 @@ title: "3D Rigid Motion"
 categories: tech
 tags: [Aerial Robotics]
 use_math: true
+toc: true  # enables the sidebar TOC
+toc_label: "On this page"  # optional, custom title for TOC
+toc_sticky: true  # optional, makes the TOC stick while scrolling
 ---
 
 三维空间刚体运动，参考自《视觉SLAM十四讲》

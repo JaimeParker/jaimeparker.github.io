@@ -3,6 +3,9 @@ title: "T-Motor F60Pro Kv2550 Parameters"
 categories: tech
 tags: [Aerial Robotics]
 use_math: true
+toc: true  # enables the sidebar TOC
+toc_label: "On this page"  # optional, custom title for TOC
+toc_sticky: true  # optional, makes the TOC stick while scrolling
 ---
 
 T-Motor F60Pro Kv2550 建模所需参数。

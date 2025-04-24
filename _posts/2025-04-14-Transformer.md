@@ -3,6 +3,9 @@ title: "Transformer: Attention is All You Need"
 categories: tech
 tags: [Large Language Models]
 use_math: true
+toc: true  # enables the sidebar TOC
+toc_label: "On this page"  # optional, custom title for TOC
+toc_sticky: true  # optional, makes the TOC stick while scrolling
 ---
 
 ## 1. Overall Architecture
