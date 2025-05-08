@@ -18,7 +18,12 @@ $$
 
 这应该是一个与电机有关的参数，See [交流电机力矩系数计算方法详解](https://www.sy-motor.net/news/2234.html)，[电机扭矩的计算和推导](https://motor.eetrend.com/content/2020/100050279.html)
 
-现在用的电机是 **T-Motor F60PRO V KV2550**，see [F60PRO V 参数](https://uav-cn.tmotor.com/html/2022/Motor_0415/925.html)
+现在用的电机是 **T-Motor F60PRO V KV2550**，see [F60PRO V 参数](https://store.tmotor.com/product/f60prov-fpv-motor.html)
+
+<figure class="align-center">
+  <img src="/assets/images/TMotorF60ProV.png" alt="T Motor F60 Pro V" style="width: 80%;">
+  <figcaption>T-Motor F60 PRO V.</figcaption>
+</figure>
 
 通过与 **T-Motor** 交流，获得电机参数如下：
 
