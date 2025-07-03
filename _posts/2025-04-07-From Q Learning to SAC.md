@@ -72,6 +72,14 @@ This equation is recursive and serves as a fixed-point definition for the optima
 
 **Bootstrapping and Backup**
 
+Let's see Monte Carlo (MC) methods first:
+
+$$
+G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots
+$$
+
+In MC methods, you wait until the end of an episode and compute the full return $G_t$ to update the value function.
+
 Q-learning updates are **bootstrapped** — meaning they rely on the agent’s own current estimates to update future values. Unlike Monte Carlo methods, which wait for full returns at the end of an episode, Q-learning performs **online updates** using a one-step target:
 
 $$
@@ -80,6 +88,8 @@ $$
 
 Here, $Q(s', a')$ is not the true value but the agent’s **current estimate**. This is the essence of bootstrapping — updating based on **estimated values rather than ground truth**.
 
+简单说，TD 下的自举就是通过当前对下一个状态 Q 值的估计，来更新当前状态的 Q 值。
+
 Additionally, Q-learning implements a **backup operation** — information from the successor state $s'$ is **backed up** to improve the current estimate $Q(s, a)$:
 
 $$
@@ -87,6 +97,25 @@ Q(s, a) \leftarrow Q(s, a) + \alpha \left[ \underbrace{r + \gamma \max_{a'} Q(s'
 $$
 
 This is a **one-step backup**, where the immediate reward and the estimated value of the next state are used to update the current value.
+但这个公式更多表示的是对 Q 值的更新过程，并引入了学习率 $\alpha$
+
+备份的概念则来自动态规划（DP）视角下的RL，比如 value iteration and policy iteration.
+可以用备份树的概念，the process of propagating value information backward from successor states to predecessor states，也就是通过后继节点（未来状态）来更新当前节点（当前状态）的值。
+
+这样看起来会比较矛盾，自举和备份不就成一回事了吗？可以这样理解：
+
+* Backup is the general notion of **transferring value estimates from next states back to current states**.
+* Bootstrapping is **how we compute the backup** — by using our current estimates rather than waiting for real returns.
+
+也就是说，自举是备份的具体实现方式。
+
+In a Bellman equation, a backup uses:
+
+$$
+\max_{a'} Q(s', a')
+$$
+
+to propagate estimates from $s'$ back to $Q(s, a)$.
 
 These concepts are central to **temporal difference (TD) learning** and are what make Q-learning both **sample-efficient** and **incremental**.
 
@@ -112,6 +141,49 @@ Q-learning can be interpreted as performing a form of **generalized policy itera
 
 <mark>Policy Evaluation (Approximate)</mark>
 
+In Classical Policy Iteration, Policy iteration decomposes into:
+
+* Policy Evaluation: Estimate the value (V or Q) of the current fixed policy $\pi$ by solving (or iteratively updating) the Bellman expectation equation.
+* Policy Improvement: Update the policy to be greedy with respect to this estimated value.
+
+Formally:
+
+$$
+V^\pi(s) = \mathbb{E}_{a \sim \pi, s' \sim P} \left[ r(s,a) + \gamma V^\pi(s') \right]
+$$
+
+or for Q:
+
+$$
+Q^\pi(s,a) = \mathbb{E}_{s' \sim P, a' \sim \pi} \left[ r(s,a) + \gamma Q^\pi(s', a') \right]
+$$
+
+Then improve via:
+
+$$
+\pi_{\text{new}}(s) = \arg\max_a Q^\pi(s,a)
+$$
+
+Q-learning is a special case of generalized policy iteration (GPI) — it implicitly does policy evaluation + improvement together in one update.
+
+* It does not evaluate a fixed policy using the Bellman expectation equation.
+* Instead, it directly uses the Bellman optimality equation, which has a $\max$ over actions, to push towards the optimal Q-function:
+
+$$
+Q^*(s,a) = \mathbb{E}_{s'} \left[ r(s,a) + \gamma \max_{a'} Q^*(s', a') \right]
+$$
+
+> 这里我们回忆一下贝尔曼期望方程和贝尔曼最优方程，前者是评估一个固定的策略，在策略评估中使用，它不取任何max操作；后者是为了找到最优的策略或值函数，在价值迭代中使用，也在Q-learning中使用，其中包含了贪心操作。
+
+This is a direct **bootstrapped approximation** of the optimal policy’s value.
+
+So Q-learning combines:
+
+* Approximate evaluation of $Q$ for the implied greedy policy $\pi(s) = \arg\max_a Q(s,a)$.
+* And immediate implicit improvement by using $\max_{a'} Q(s',a')$ in the target.
+
+所以总结下来：
+
 Unlike classical policy evaluation (which assumes a fixed policy), Q-learning **bootstraps** the evaluation by updating $Q(s,a)$ based on one-step lookahead:
 
 - Uses the **greedy action** in the next state to evaluate the current state-action pair.
@@ -128,6 +200,17 @@ $$
 This defines the **greedy policy**, which becomes optimal as $Q(s,a)$ converges to $Q^*(s,a)$.
 
 Although Q-learning does not explicitly represent a policy, it **implicitly improves the policy** by making $Q(s,a)$ closer to the optimal, and selecting better actions during planning or execution.
+
+Q-learning does not do pure policy evaluation under a policy — it does approximate evaluation of the optimal greedy policy at each step. 所以 Q-Learning 在一次更新中把评估与更新全干了，因此其不是在一个 fixed policy 上进行的 policy evaluation, 不是标准的 policy evaluation，而是属于广义的，GPI。
+
+That’s why it’s not called policy iteration in the classic sense. It is instead a generalized policy iteration (GPI) method that combines approximate policy evaluation under a hypothetical greedy policy with policy improvement simultaneously.
+
+Soft Q-learning and SAC extend this by replacing $\max$ with a softmax (log-sum-exp) to encourage stochastic policies, leading to maximum entropy RL.
+
+最后，放一个修改的总结：
+
+* Q-learning does not do classic policy evaluation, which evaluates a fixed policy.
+* Instead, Q-learning does policy iteration in one step, doing the evaluation of Q-function and updating the policy using greedy (in the max term).
 
 ### 1.3 Theoretical Justification
 
@@ -217,6 +300,112 @@ Q-learning converges under certain conditions:
   $\sum_t \alpha_t^2(s,a) < \infty$
 - Each state-action pair is visited infinitely often.
 - The environment is a stationary MDP.
+
+### 1.6 Soft Q-Learning
+
+In standard Q-learning, the Bellman optimality equation is:
+
+$$
+Q^*(s, a) = r(s, a) + \gamma \mathbb{E}_{s'} \left[ \max_{a'} Q^*(s', a') \right]
+$$
+
+This focuses only on maximizing expected return.
+
+Soft Q-learning modifies this by explicitly softening the greedy maximum operator, replacing it with a softmax (log-sum-exp) backup:
+
+$$
+Q^*(s, a) = r(s, a) + \gamma \mathbb{E}_{s'} \left[ V^*(s') \right]
+$$
+
+$$
+V^*(s') = \alpha \log \int_{a'} \exp\left(\frac{1}{\alpha} Q^*(s', a') \right) da'
+$$
+
+#### 1.6.1 Why use Softmax?
+
+The softmax (log-sum-exp) is a “soft” maximum, weighting all actions by their exponentiated Q-values.
+
+**Mathematical reason: softmax is a smooth relaxation of max**
+
+在传统的贝尔曼最优方程中，使用的是：
+
+$$
+\max_{a'} Q(s', a')
+$$
+
+* Non-smooth (not differentiable wrt $Q$).
+* Only focuses on the single best action, ignoring near-optimal ones.
+
+而 softmax 是一个对 max 的可微近似，Softmax (log-sum-exp) is a differentiable approximation to max
+
+The log-sum-exp operator:
+
+$$
+\mathrm{lse}_\alpha(Q) = \alpha \log \int_{a} \exp\!\!\left(\frac{1}{\alpha} Q(s,a)\right) da
+$$
+
+has the property that as $\alpha \to 0$:
+
+$$
+\mathrm{lse}_\alpha(Q) \to \max_a Q(s,a)
+$$
+
+This provides a soft maximum, which:
+
+* Smoothly aggregates contributions from all actions.
+* Gives a differentiable objective, critical for stochastic policy gradients.
+
+**Control theory & stochastic optimality: maximizing entropy**
+
+In maximum entropy reinforcement learning, the goal is not just to maximize expected return, but also the entropy of the policy:
+
+$$
+\max_\pi \sum_t \mathbb{E} \left[ r(s_t, a_t) + \alpha \mathcal{H}(\pi(\cdot \mid s_t)) \right]
+$$
+
+This changes the Bellman backup from:
+
+$$
+Q^*(s,a) = r + \gamma \mathbb{E}_{s'} [\max_{a'} Q^*(s', a')]
+$$
+
+to
+
+$$
+Q^*(s,a) = r + \gamma \mathbb{E}_{s'} \left[ \alpha \log \int_{a'} \exp\!\!\left(\frac{1}{\alpha} Q^*(s', a')\right) da' \right]
+$$
+
+Here, the log-sum-exp explicitly integrates entropy into the value calculation, favoring policies that spread probability across multiple good actions rather than deterministically picking only the single highest.
+
+**Information-theoretic optimal policy form**
+
+If you derive the optimal policy under the maximum entropy objective (by minimizing KL divergence to a Boltzmann distribution), you get:
+
+$$
+\pi^*(a \mid s) \propto \exp\!\!\left( \frac{1}{\alpha} Q^*(s,a) \right)
+$$
+
+Then the expected value under this policy is:
+
+$$
+V^*(s) = \alpha \log \int_{a} \exp\!\!\left(\frac{1}{\alpha} Q^*(s,a)\right) da
+$$
+
+So the soft Bellman equation naturally uses log-sum-exp because it’s exactly what arises when you solve for the value of a stochastic policy that trades off reward vs. entropy.
+
+This is not just a heuristic — it is optimal under the maximum entropy objective.
+
+**Computational view: encourages exploration & stability**
+
+Classic max only cares about the absolute best action.
+Leads to sharp policies, poor exploration, and brittle updates.
+
+
+Softmax (log-sum-exp) naturally weights actions by their exponentiated Q-value.
+
+* Encourages trying multiple near-optimal actions.
+* Reduces overcommitment early in training when estimates are noisy.
+* Leads to more stable, exploratory learning.
 
 ## 2. Deep Q-Networks (DQN)
 
@@ -1259,3 +1448,4 @@ This architecture allows SAC to be sample efficient, robust to overestimation, a
 * [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor](https://arxiv.org/abs/1801.01290), the first paper of SAC
 * [Soft Actor-Critic Algorithms and Applications](http://arxiv.org/abs/1812.05905), the second paper of SAC
 * [最前沿：深度解读Soft Actor-Critic 算法](https://zhuanlan.zhihu.com/p/70360272)
+* [Soft Q-Learning 论文笔记](https://zhuanlan.zhihu.com/p/76681229)
