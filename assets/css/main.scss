@@ -6,6 +6,10 @@ search: false
 @charset "utf-8";
 
 @import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
+
+// Override default theme variables
+$max-width: 1480px;
+
 @import "minimal-mistakes"; // main partials
 
 /* 调整整体文章内容的字体大小 */
@@ -23,7 +27,7 @@ search: false
     }
     
     p, li, ul, ol {
-      font-size: 1.0em;
+      font-size: 0.95em;
       line-height: 1.6;
     }
     
@@ -63,7 +67,7 @@ search: false
     
     /* 调整引用块字体大小 */
     blockquote {
-      font-size: 1.0em;
+      font-size: 0.95em;
       padding: 0.5em 0.5em;
       margin: 0.5em 0 !important; /* 减小上下外边距 */
     }
